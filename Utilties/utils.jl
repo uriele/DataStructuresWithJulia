@@ -5,7 +5,7 @@ const REDOALL=Ref(false)
 
 setredo(x::Bool)=REDOALL[]=x
 getredo()=REDOALL[]
-@inline function benchmarking(f::Function, val::LinkedList;kwargs...)
+@inline function benchmarking(f::Function, val;kwargs...)
     if isempty(kwargs)
         return time(mean(@benchmark($f(a,values($kwargs)...); setup=(a=deepcopy($val)), evals=1)))
     else

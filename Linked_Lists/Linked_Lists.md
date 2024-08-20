@@ -55,14 +55,14 @@ Something in between lists and arrays
 ## Single Linked List
 
 ### Traverse: 
-![Linked List](./ListLength.svg)
+![Linked List](./SingleListLength.svg)
 To traverse it I neeto to get all the elements in the list until I hit `Nothing` (see `ListLength`)
     
 * Time Complexity: O(N) [to traverse while counting]
 * Space Complexity: O(1) [to allocate counter]
 
 ### Insert Node:
-![Linked List](./ListPush.svg)
+![Linked List](./SingleListPush.svg)
 #### Insert at the beginning (`pushfirst!`)
 - Create new element `new_node`
 - Make new_node point at `head`
@@ -92,7 +92,7 @@ To traverse it I neeto to get all the elements in the list until I hit `Nothing`
 
 
 ### Delete Node
-![Linked List](./ListPop.svg)
+![Linked List](./SingleListPop.svg)
 
 ### Delete at the beginning (`popfirst!`)
 - new_head= next(head)
@@ -121,3 +121,172 @@ To traverse it I neeto to get all the elements in the list until I hit `Nothing`
 * Space Complexity: O(1)
 
 
+## Doubly Linked Lists
+It has the same complexity of operations, but travelling through the system is easier.
+
+### Advantages
+It can run in both ways, so I do not need to repeat the lookup of the list if I need to find the predecessor of a node. Also we don't need to know both next and previous to delete an element
+### Disadvantages
+- It requires more memory for each element (I need to store also the previous pointer)
+- Makes the operation of adding and removing a bit more complex cause I need to change two pointers instead of one
+### Traverse
+![Linked List](./SingleListLength.svg)
+
+* Time Complexity: O(N)
+* Space Complexity: O(1)
+### Insert
+![Linked List](./SingleListPush.svg)
+
+* Time Complexity: O(N) \[O(1) for pushfirst!\]
+* Space Complexity: O(1)
+### Delete 
+![Linked List](./SingleListPop.svg)
+* Time Complexity: O(N) \[O(1) for popfirst!\]
+* Space Complexity: O(1)
+
+## Circular Linked Lists
+The circular linked list is accessible by the head. Traversing stops when you reach the head again. All the functions are the same of the non circulat case, but we need to remember that the last element loops.
+
+!!! note
+   A technical advantage for a double circular linked list is that I can travel in half the time if the length is known a priori if i>L/2 I can travel backward to `end-i+1` otherwise I can travel forward.
+
+   This is hampered by the fast that I would need, for every linked list to store the current length in the structure, since computing the length would still require N operations (next(head)/2+prev(tail)/2)
+
+!! note "Prectical Uses"
+   A practical use of a circular double linked list is to implement stacks and queues, since the first and last element are easily accessible in O(1)
+
+### Traverse
+If we use `!isnothing(next(node))` the function would go in an infinite loop. Thus, we need to stop when the function returns to the head.
+```julia
+node=head=list[1]
+while !isnothing(node)
+   node=next(node)
+   node===head && break # circular condition
+end
+```
+#### Single
+![Linked List](./CircularSingleListLength.svg)
+#### Double
+![Linked List](./CircularDoubleListLength.svg)
+
+* Time Complexity: O(N) 
+* Space Complexity: O(1)
+Time
+### Insert & Delete
+`pushat!` and `popat!` would remain the same for all lists, but we need to modify `push!`,`pushfirst!`,`pop!` and `popfirst` to take into account the connection between the first and the last element
+
+#### Single Insertion and Delition
+
+![Linked List](./CircularSingleListPush.svg)
+![Linked List](./CircularSingleListPop.svg)
+A Single Circular linked list has time complexity O(N) for all operations, since you need to traverse the entire list to get the tail
+* Time Complexity: O(N)
+#### Double Insertion and Delition
+![Linked List](./CircularDoubleListPush.svg)
+![Linked List](./CircularDoubleListPop.svg)
+A Double Circular linked list has time complexity O(1) for both `push!` and `pushfirst!` (`pop!` and `popfirst!`) since to get to the tail I can simply use `prev(head)`. The `pushat!` and `popat!` have still O(N) complexity
+
+## Efficient implementation of a Double linked list
+In general, I need to specify both the `next` node and the `prev` node, making the implementation of a double linked list taking more memory of a single linked list
+
+However, using pointer operations I can store the difference between the memory addresses so that I can store the information in a single operator.
+
+```julia
+mutable struct DoubleEfficientNode{T}
+   value::T
+   ptrdiff::UInt  # Or Ptr but UInt is easier
+end
+DoubleEfficientNode(value::T) where T =DoubleEfficientNode{T}(value,UInt(0)) #point to C_NULL
+
+LinkedList{Int,DoubleEfficientNode}(xarr::Array{T}) = begin
+   value=xarray[firstindex(xarray)]
+   node=DoubleEfficientNode(value)
+   ptr_prev=UInt(0)
+   for i in firstindex(xarray)+1 : lastindex(xarray)
+      node_new=DoubleEfficientNode(xarray[i])
+      ptr_new=UInt(pointer_from_objref(node_new)) #new_ptr
+      node.ptrdiff=xor(ptr_new,ptr_prev) # old_ptr xor 
+      ptr_prev=UInt(pointer_from_objref(node)) 
+      node=node_new
+   end
+   node.ptrdiff= ptr_prev # xor (ptr_prev,0)
+end
+```
+Assuming we have a linked list like
+
+Null-A-B-C-...-END-Null
+
+- B=xor(A,Null)
+- C=xor(A,C) xor A -> moving forward
+- A=xor(A,C) xor C -> moving backward
+
+!! note
+   If we want to make it circular, we need to store the pointer to the tail and the head in the linked list, otherwise it wouldn't work, however, all other nodes will only have one pointer
+
+
+## Unrolled Linked Lists
+
+It is possible to get some of the advantages of the linked lists by mixing them with arrays, by creating a linked list that instead of containing single elements, it contains arrays. 
+Thus, traversing each chunk would only take O(1) (like an array), also I am not forced to have contiguous memory for a large array, and locally I can push and pop with the same complexity of a linked list.
+
+!! note
+   An unrolled linked list IS NOT a dynamic array. I can create a list where each element is as big as cache line, so that I can load directly in memory my elements
+
+- each block is kept of the size of the cache line
+- inside each block I try to keep the capacity to 3/4 (not full), thus I can easily push and pull elements.
+- when an array gets too full, I move its content.
+
+### Overhead
+Each node has:
+   - pointer to next block (single) and previous block (double)
+   - Int containing the MaxSize of the block
+   - A pre allocated static array of size MaxSize
+
+```julia
+abstract type AbstractBlockNode{T,N::Int} <:AbstractListNode{T}
+mutable struct SingleBlockNode{T,N}<:AbstractBlockNode
+   value::StaticArray{T,1}
+   next::SingleBlockNode{T,N}
+   _current_idx::Int
+end
+
+# Update Scalar
+SingleBlockNode(value::T,next=nothing;MaxSize=4) where T = begin
+   vec=StaticVector{T}(undef,MaxSize);
+   vec[1]=value
+   return SingleBlockNode{T,MaxSize}(vec,next,_current_idx=1)
+end
+
+# Update Vector
+SingleBlockNode(value::AbstractVector{T},next=nothing;MaxSize=4,filling=3/4) where T = begin
+   @assert(MaxSize>2,"MaxSize has to be greater than 2")
+   @assert(0<filling<=1,"filling has to be between 0 and 1")
+   real_filling=min(max(1,round(MaxSize*filling)),length(value))
+   
+
+   if length(value)>real_filling
+      ptr = SingleBlockNode(value[real_filling+1:end];MaxSize=MaxSize,filling=filling);
+   end
+   vec=StaticVector{T}(undex,MaxSize)
+   vec[1:real_filling]=value[1:real_filling]
+
+   return SingleBlockNode{T,MaxSize}(vec,ptr,real_filling)
+end
+```
+
+
+# Traverse the list
+If I want to look at the kth element:
+
+1. Find the list of interest: `(l,i)=divrem(k,real_filling)`
+2. Go to list `l+1` (0 indexed) O(m/N)
+3. Go to element `i` (O(m))
+
+# Inserting
+Insertion is a bit more complex than normal lists. Since I want to keep the number of elements constant and I require to shift all other blocks content to keep my properties
+
+1. Create new element `new_elem` 
+2a. Save `array_tail=push_block[end]`
+2b. Put new_elem in the right position and shift the i-i element of the array up
+2c. move `_current_idx`
+3. If it reaches max size, move to the new element
