@@ -171,7 +171,6 @@ end
 
 * Time Complexity: O(N) 
 * Space Complexity: O(1)
-Time
 ### Insert & Delete
 `pushat!` and `popat!` would remain the same for all lists, but we need to modify `push!`,`pushfirst!`,`pop!` and `popfirst` to take into account the connection between the first and the last element
 
@@ -185,6 +184,29 @@ A Single Circular linked list has time complexity O(N) for all operations, since
 ![Linked List](./CircularDoubleListPush.svg)
 ![Linked List](./CircularDoubleListPop.svg)
 A Double Circular linked list has time complexity O(1) for both `push!` and `pushfirst!` (`pop!` and `popfirst!`) since to get to the tail I can simply use `prev(head)`. The `pushat!` and `popat!` have still O(N) complexity
+
+## Efficient implementation of Length
+It is possible to implement length by adding an additional attribute to the linked list
+
+```julia
+mutable struct LinkedList{T,NL}
+   head::NL{T}
+   _length::UInt
+end
+```
+In this way, the _length of the list is defined at construction and it is updated every time I push or pop an element, making the complexity O(1). Thus, accessing all elements in the list becomes faster
+### Single Linked List
+![Linked List](./SingleListAccess.svg)
+### Double Linked List
+![Linked List](./DoubleListAccess.svg)
+### Circular Single Linked List
+![Linked List](./CircularSingleListAccess.svg)
+### Circular Double Linked List
+Circular Double Linked List is a particular case, since now accessing both the initial and the final element has complexity O(1)
+![Linked List](./CircularDoubleListAccess.svg)
+
+
+
 
 ## Efficient implementation of a Double linked list
 In general, I need to specify both the `next` node and the `prev` node, making the implementation of a double linked list taking more memory of a single linked list
